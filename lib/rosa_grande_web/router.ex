@@ -15,7 +15,7 @@ defmodule RosaGrandeWeb.Router do
   scope "/", RosaGrandeWeb do
     pipe_through :browser
 
-    post "/users/register", UserAuthController, :register
+    # post "/users/register", UserAuthController, :register
     post "/users/log_in", UserAuthController, :login
     get "/updates", UpdateController, :index
   end
