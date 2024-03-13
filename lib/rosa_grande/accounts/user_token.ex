@@ -3,6 +3,8 @@ defmodule RosaGrande.Accounts.UserToken do
   import Ecto.Query
   alias RosaGrande.Accounts.UserToken
 
+  import Plug.Conn
+
   @hash_algorithm :sha256
   @rand_size 32
 
@@ -15,6 +17,7 @@ defmodule RosaGrande.Accounts.UserToken do
 
   schema "users_tokens" do
     field :token, :binary
+    field :user_agent, :string
     field :context, :string
     field :sent_to, :string
     belongs_to :user, RosaGrande.Accounts.User
@@ -41,9 +44,10 @@ defmodule RosaGrande.Accounts.UserToken do
   and devices in the UI and allow users to explicitly expire any
   session they deem invalid.
   """
-  def build_session_token(user) do
+  def build_session_token(user, conn) do
+    [agent | _] = get_req_header(conn, "user-agent")
     token = :crypto.strong_rand_bytes(@rand_size)
-    {token, %UserToken{token: token, context: "session", user_id: user.id}}
+    {token, %UserToken{token: token, user_agent: agent, context: "session", user_id: user.id}}
   end
 
   @doc """
@@ -54,13 +58,15 @@ defmodule RosaGrande.Accounts.UserToken do
   The token is valid if it matches the value in the database and it has
   not expired (after @session_validity_in_days).
   """
-  def verify_session_token_query(token) do
+  def verify_session_token_and_agent_query(token, agent) do
     query =
-      from token in by_token_and_context_query(token, "session"),
+      from token in token_and_context_query(token, "session"),
         join: user in assoc(token, :user),
-        where: token.inserted_at > ago(@session_validity_in_days, "day"),
+        where:
+          token.inserted_at > ago(@session_validity_in_days, "day") and token.user_agent == ^agent,
         select: user
 
+    IO.inspect(query)
     {:ok, query}
   end
 
@@ -114,7 +120,7 @@ defmodule RosaGrande.Accounts.UserToken do
         days = days_for_context(context)
 
         query =
-          from token in by_token_and_context_query(hashed_token, context),
+          from token in token_and_context_query(hashed_token, context),
             join: user in assoc(token, :user),
             where: token.inserted_at > ago(^days, "day") and token.sent_to == user.email,
             select: user
@@ -149,7 +155,7 @@ defmodule RosaGrande.Accounts.UserToken do
         hashed_token = :crypto.hash(@hash_algorithm, decoded_token)
 
         query =
-          from token in by_token_and_context_query(hashed_token, context),
+          from token in token_and_context_query(hashed_token, context),
             where: token.inserted_at > ago(@change_email_validity_in_days, "day")
 
         {:ok, query}
@@ -162,18 +168,25 @@ defmodule RosaGrande.Accounts.UserToken do
   @doc """
   Returns the token struct for the given token value and context.
   """
-  def by_token_and_context_query(token, context) do
+  def token_and_context_query(token, context) do
     from UserToken, where: [token: ^token, context: ^context]
+  end
+
+  @doc """
+  Returns the token struct for the given user-agent.
+  """
+  def agent_query(agent) do
+    from UserToken, where: [user_agent: ^agent]
   end
 
   @doc """
   Gets all tokens for the given user for the given contexts.
   """
-  def by_user_and_contexts_query(user, :all) do
+  def user_and_contexts_query(user, :all) do
     from t in UserToken, where: t.user_id == ^user.id
   end
 
-  def by_user_and_contexts_query(user, [_ | _] = contexts) do
+  def user_and_contexts_query(user, [_ | _] = contexts) do
     from t in UserToken, where: t.user_id == ^user.id and t.context in ^contexts
   end
 end

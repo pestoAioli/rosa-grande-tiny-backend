@@ -60,6 +60,16 @@ defmodule RosaGrande.Accounts do
   """
   def get_user!(id), do: Repo.get!(User, id)
 
+  @doc """
+  gets user by username
+  """
+  def get_user_by_username(username), do: Repo.get_by(User, username: username["username"])
+
+  @doc """
+  gets all users
+  """
+  def get_all_users(), do: Repo.all(User)
+
   ## User registration
 
   @doc """
@@ -80,6 +90,10 @@ defmodule RosaGrande.Accounts do
     |> Repo.insert()
   end
 
+  def change_user_profile(%User{} = user, attrs \\ %{}) do
+    User.user_profile_changeset(user, attrs)
+  end
+
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking user changes.
 
@@ -90,7 +104,7 @@ defmodule RosaGrande.Accounts do
 
   """
   def change_user_registration(%User{} = user, attrs \\ %{}) do
-    User.registration_changeset(user, attrs, hash_password: false, validate_email: false)
+    User.registration_changeset(user, attrs, password: false, validate_email: false)
   end
 
   ## Settings
@@ -154,7 +168,7 @@ defmodule RosaGrande.Accounts do
 
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, changeset)
-    |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, [context]))
+    |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, [context]))
   end
 
   @doc ~S"""
@@ -207,7 +221,7 @@ defmodule RosaGrande.Accounts do
 
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, changeset)
-    |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, :all))
+    |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, :all))
     |> Repo.transaction()
     |> case do
       {:ok, %{user: user}} -> {:ok, user}
@@ -220,8 +234,8 @@ defmodule RosaGrande.Accounts do
   @doc """
   Generates a session token.
   """
-  def generate_user_session_token(user) do
-    {token, user_token} = UserToken.build_session_token(user)
+  def generate_user_session_token(user, conn) do
+    {token, user_token} = UserToken.build_session_token(user, conn)
     Repo.insert!(user_token)
     token
   end
@@ -229,8 +243,8 @@ defmodule RosaGrande.Accounts do
   @doc """
   Gets the user with the given signed token.
   """
-  def get_user_by_session_token(token) do
-    {:ok, query} = UserToken.verify_session_token_query(token)
+  def get_user_by_session_token_and_agent(token, agent) do
+    {:ok, query} = UserToken.verify_session_token_and_agent_query(token, agent)
     Repo.one(query)
   end
 
@@ -238,7 +252,7 @@ defmodule RosaGrande.Accounts do
   Deletes the signed token with the given context.
   """
   def delete_user_session_token(token) do
-    Repo.delete_all(UserToken.by_token_and_context_query(token, "session"))
+    Repo.delete_all(UserToken.token_and_context_query(token, "session"))
     :ok
   end
 
@@ -286,7 +300,7 @@ defmodule RosaGrande.Accounts do
   defp confirm_user_multi(user) do
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, User.confirm_changeset(user))
-    |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, ["confirm"]))
+    |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, ["confirm"]))
   end
 
   ## Reset password
@@ -343,7 +357,7 @@ defmodule RosaGrande.Accounts do
   def reset_user_password(user, attrs) do
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, User.password_changeset(user, attrs))
-    |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, :all))
+    |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, :all))
     |> Repo.transaction()
     |> case do
       {:ok, %{user: user}} -> {:ok, user}

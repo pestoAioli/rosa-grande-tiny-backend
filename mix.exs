@@ -49,7 +49,8 @@ defmodule RosaGrande.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:plug_cowboy, "~> 2.5"},
-      {:corsica, "~> 2.1.1"}
+      {:corsica, "~> 2.1.1"},
+      {:phoenix_view, "~> 2.0"}
     ]
   end
 
