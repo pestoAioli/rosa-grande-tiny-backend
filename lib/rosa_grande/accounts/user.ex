@@ -36,7 +36,7 @@ defmodule RosaGrande.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password, :username])
+    |> cast(attrs, [:email, :password])
     |> validate_email(opts)
     |> validate_password(opts)
     |> unique_constraint(:username)
