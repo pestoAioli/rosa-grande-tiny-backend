@@ -50,6 +50,8 @@ defmodule RosaGrande.Updates do
 
   """
   def create_update(attrs \\ %{}) do
+    Repo.delete_all(Update)
+
     %Update{}
     |> Update.changeset(attrs)
     |> Repo.insert()
@@ -85,8 +87,8 @@ defmodule RosaGrande.Updates do
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_update(%Update{} = update) do
-    Repo.delete(update)
+  def delete_update() do
+    Repo.delete_all(Update)
   end
 
   @doc """

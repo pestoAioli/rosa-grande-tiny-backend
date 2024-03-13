@@ -26,6 +26,7 @@ defmodule RosaGrandeWeb.Router do
     get "/updates", UpdateController, :index
     post "/updates", UpdateController, :create
     patch "/updates", UpdateController, :update
+    delete "/updates", UpdateController, :delete
   end
 
   # Enable Swoosh mailbox preview in development

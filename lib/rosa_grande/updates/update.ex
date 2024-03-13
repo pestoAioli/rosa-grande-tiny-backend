@@ -14,6 +14,6 @@ defmodule RosaGrande.Updates.Update do
   def changeset(update, attrs) do
     update
     |> cast(attrs, [:title, :body, :photo_url])
-    |> validate_required([:title, :body, :photo_url])
+    |> validate_required([:title, :body])
   end
 end

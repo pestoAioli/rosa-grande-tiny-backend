@@ -15,7 +15,6 @@ defmodule RosaGrandeWeb.UpdateController do
     with {:ok, %Update{} = update} <- Updates.create_update(update_params) do
       conn
       |> put_status(:created)
-      |> put_resp_header("location", ~p"/api/updates/#{update}")
       |> render(:show, update: update)
     end
   end
@@ -36,8 +35,9 @@ defmodule RosaGrandeWeb.UpdateController do
   def delete(conn, %{"id" => id}) do
     update = Updates.get_update!(id)
 
-    with {:ok, %Update{}} <- Updates.delete_update(update) do
-      send_resp(conn, :no_content, "")
-    end
+    IO.inspect(update)
+
+    Updates.delete_update()
+    send_resp(conn, :no_content, "")
   end
 end
