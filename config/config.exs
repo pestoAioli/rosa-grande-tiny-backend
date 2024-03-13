@@ -13,7 +13,7 @@ config :rosa_grande,
 
 # Configures the endpoint
 config :rosa_grande, RosaGrandeWeb.Endpoint,
-  url: [host: "localhost"],
+  url: [host: "https://rosagrandetattoo.com"],
   adapter: Phoenix.Endpoint.Cowboy2Adapter,
   render_errors: [
     formats: [html: RosaGrandeWeb.ErrorHTML, json: RosaGrandeWeb.ErrorJSON],
