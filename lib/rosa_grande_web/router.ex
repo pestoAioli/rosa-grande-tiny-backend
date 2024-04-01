@@ -24,6 +24,7 @@ defmodule RosaGrandeWeb.Router do
   scope "/api", RosaGrandeWeb do
     pipe_through :api
 
+    get "/user", UserAuthController, :index
     post "/updates", UpdateController, :create
     patch "/updates", UpdateController, :update
     delete "/updates", UpdateController, :delete
